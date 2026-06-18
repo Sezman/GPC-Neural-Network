@@ -1,0 +1,24 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Trained model artifacts (regenerate with: py train_nn.py) ----
+backend/model/
+
+# ---- Real / private training data (keep sample CSV, ignore anything else) ----
+backend/*_private*.csv
+backend/real_*.csv
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

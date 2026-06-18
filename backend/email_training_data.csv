@@ -1,0 +1,67 @@
+text,label
+"Urgent: Your account has been suspended",High
+"Action required: Verify your identity now",High
+"Your payment failed - please update your billing details",High
+"Security alert: New sign-in to your account",High
+"Your subscription has been canceled",High
+"Final notice: Invoice overdue, pay immediately",High
+"Your verification code is 845213",High
+"Interview invitation for the Software Engineer role",High
+"Congratulations! We would like to offer you the position",High
+"Deadline today: Submit your tax documents",High
+"Immediate action needed to keep your account active",High
+"Password reset requested for your account",High
+"Unusual login attempt detected on your account",High
+"Your card was declined - payment unsuccessful",High
+"Reminder: Application deadline is tonight at 11:59 PM",High
+"Your domain expires today - renew now to avoid losing it",High
+"We detected suspicious activity, please secure your account",High
+"Job offer from Acme Corp - please respond by Friday",High
+"Account locked due to multiple failed login attempts",High
+"Urgent: Wire transfer approval needed before 5 PM",High
+"Your two-factor authentication code: 902137",High
+"Last chance: Confirm your enrollment before it closes",High
+"Your application has been received",Medium
+"Meeting scheduled for Tuesday at 10 AM",Medium
+"Reminder: Dentist appointment tomorrow",Medium
+"Invoice #4521 from your accountant",Medium
+"Here is your receipt for last month's order",Medium
+"Your free trial ends in 3 days",Medium
+"Booking confirmation for your hotel stay",Medium
+"Your appointment has been confirmed",Medium
+"Project sync meeting moved to 2 PM",Medium
+"Your monthly invoice is now available",Medium
+"Reminder: Please submit your timesheet this week",Medium
+"Your order has shipped - tracking details inside",Medium
+"Confirmation of your subscription renewal",Medium
+"Your trial upgrade is ready to activate",Medium
+"Calendar invite: Quarterly planning session",Medium
+"Receipt for your recent payment",Medium
+"Your package will be delivered today",Medium
+"Reminder: Team standup at 9 AM",Medium
+"We have received your support request",Medium
+"Appointment reminder with Dr. Lee on Monday",Medium
+"Your reservation is confirmed for Saturday",Medium
+"Invoice due next week for services rendered",Medium
+"Weekly newsletter: Top stories this week",Low
+"50% off sale - shop now before it ends",Low
+"Our updated privacy policy",Low
+"Your daily news digest",Low
+"Alumni spotlight: Catch up with your classmates",Low
+"Monthly performance report is now available",Low
+"Huge summer promotion just for you",Low
+"You can unsubscribe anytime from our mailing list",Low
+"New blog post: 10 productivity tips",Low
+"Flash sale: Limited time discounts inside",Low
+"Check out our latest product updates",Low
+"We've updated our terms and privacy policy",Low
+"Your weekly activity digest",Low
+"Special offer: Save big this weekend",Low
+"Newsletter: Community events this month",Low
+"Exclusive deals and promotions for members",Low
+"Read our newsletter and stay informed",Low
+"End of season clearance sale",Low
+"Quarterly performance report summary",Low
+"Join our webinar - a free promotional event",Low
+"Holiday promotion: Gifts for everyone",Low
+"Your monthly digest of recommended reads",Low

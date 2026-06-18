@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail Priority Classifier",
+  "version": "0.1.0",
+  "description": "Adds a priority badge (High/Medium/Low) to visible Gmail rows, scored by a local FastAPI backend (neural network with rule-based fallback).",
+  "host_permissions": ["http://127.0.0.1:8000/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
