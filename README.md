@@ -1,109 +1,72 @@
-# Gmail Priority Classifier 🧠📧
+# Gmail Priority Classifier
 
-A **neural-network email prioritizer** for Gmail. A Manifest V3 Chrome extension
-reads your visible inbox rows and a **local PyTorch classifier** labels each one
-**High / Medium / Low**, shown as a colored badge right in Gmail.
+A Chrome extension that labels your Gmail inbox by priority. Each visible email
+row gets a High, Medium, or Low badge, predicted by a small neural network that
+runs locally on your machine.
 
-The model uses **sentence-transformer embeddings + a feed-forward neural
-network**, so it understands meaning rather than just matching keywords — e.g.
-*"Special offer: save big this weekend"* is correctly read as **Low**
-(promotional) even though "offer" is a keyword that naive rules would flag as
-High.
+The model uses sentence-transformer embeddings and a feed-forward PyTorch
+classifier, so it reads meaning rather than just matching keywords. For example,
+"Special offer: save big this weekend" is classified as Low (promotional) even
+though "offer" is a word that simple keyword rules would treat as High.
 
-> 🔒 **Fully local & private.** The model runs on your machine via a local
-> FastAPI server (`127.0.0.1`). No email text is ever sent to an external API.
-
----
+Everything runs locally through a FastAPI server on `127.0.0.1`. No email text
+is sent anywhere.
 
 ## How it works
 
-```
-Gmail (browser)  ──row text──►  FastAPI backend  ──►  Neural network (PyTorch)
-   content.js                      /score                 embeddings + classifier
-       ▲                              │
-       └──────── High/Medium/Low ◄────┘  (label + confidence)
-```
+The extension extracts the text from each inbox row and sends it to the local
+backend. The backend turns that text into an embedding, runs the trained model,
+and returns a label with the model's confidence. The extension then draws the
+badge.
 
-1. **Extension** (`gmail-priority-extension/`) extracts each email row's text and
-   POSTs it to the backend, then paints a priority badge. It includes a floating
-   panel with two pill toggles (**Badges**, **Hide Low**), result caching, and a
-   `MutationObserver` to handle Gmail's dynamic loading.
-2. **Backend** (`backend/`) turns the text into an embedding
-   (`all-MiniLM-L6-v2`) and runs the trained PyTorch model, returning the
-   predicted label and the model's confidence.
+If the model has not been trained yet or fails to load, the backend uses
+rule-based keyword scoring instead. And if the backend is not running at all, the
+extension falls back to the same keyword rules in JavaScript. Either way you
+still get badges.
 
-### Robust fallbacks (you always get badges)
+## Setup
 
-- Backend **neural network** → if the model isn't trained / fails to load, the
-  backend uses **rule-based keyword scoring**.
-- If the **backend is offline**, the extension falls back to the same keyword
-  rules running in JavaScript.
-
----
-
-## Quick start
-
-### 1. Backend
+Run the backend first.
 
 ```bash
 cd backend
-pip install -r requirements.txt     # or: py -m pip install -r requirements.txt
-py train_nn.py                       # train the neural network (prints accuracy)
-py -m uvicorn main:app --reload      # serve at http://127.0.0.1:8000
+pip install -r requirements.txt
+py train_nn.py
+py -m uvicorn main:app --reload
 ```
 
-Confirm the active engine at **http://127.0.0.1:8000/model-status**
-→ `{"mode": "neural-network", ...}` once trained.
+This serves at `http://127.0.0.1:8000`. Visit `http://127.0.0.1:8000/model-status`
+to confirm whether it is running in neural-network or rule-based mode.
 
-### 2. Extension
+Then load the extension. Open `chrome://extensions`, enable Developer mode,
+click Load unpacked, and select the `gmail-priority-extension` folder. Open or
+refresh Gmail and the badges will appear.
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select the `gmail-priority-extension/` folder.
-3. Open / refresh **https://mail.google.com** — badges appear on your inbox rows.
-
-📖 Full details (endpoints, training data, troubleshooting, Gmail-DOM notes) are
-in **[`gmail-priority-extension/README.md`](gmail-priority-extension/README.md)**.
-
----
+Full backend and extension documentation, including the API endpoints and notes
+on Gmail's unstable DOM, is in
+[`gmail-priority-extension/README.md`](gmail-priority-extension/README.md).
 
 ## Project structure
 
 ```
 EmailClassifier/
-  gmail-priority-extension/   # Chrome extension (Manifest V3, plain JS/CSS)
-    manifest.json
-    content.js
-    styles.css
-    README.md                 # detailed docs
-  backend/                    # Local FastAPI + PyTorch service
-    main.py                   # /score, /health, /model-status
-    train_nn.py               # trains the neural network from the CSV
-    email_training_data.csv   # starter labeled examples (text,label)
-    requirements.txt
-    model/                    # generated by train_nn.py (gitignored)
+  gmail-priority-extension/   Chrome extension (Manifest V3, plain JS/CSS)
+  backend/                    FastAPI service + PyTorch model and trainer
+    main.py                   /score, /health, /model-status
+    train_nn.py               trains the model from the CSV
+    email_training_data.csv   starter labeled examples
+    model/                    generated by train_nn.py (gitignored)
 ```
 
----
+## Improving the model
 
-## Tech
+The repo ships with a small starter dataset of about 66 examples, so accuracy is
+limited. To improve it, add more real labeled rows to
+`backend/email_training_data.csv` (a `text,label` pair per line, with labels
+High, Medium, or Low) and run `py train_nn.py` again.
 
-Chrome Extension (Manifest V3) · FastAPI · PyTorch · sentence-transformers ·
-scikit-learn · pandas
+## Notes
 
-## The model improves with data
-
-The repo ships with a small starter dataset (~66 examples). Add more **real,
-labeled** rows to `backend/email_training_data.csv` (`text,label`) and re-run
-`py train_nn.py` to make predictions smarter.
-
----
-
-## Status & roadmap
-
-**Done:** local FastAPI backend · neural-network classifier · rule-based
-fallback · private/local-only inference.
-
-**Next ideas:** larger training set · Gmail API/OAuth (instead of DOM scraping) ·
-real Gmail labels · in-browser inference · learning from user corrections.
-
-This is an MVP for learning/experimentation — not an official Google product.
+This is a learning project, not an official Google product. It reads only the
+text already rendered on the Gmail page and does not change your real Gmail
+labels.
