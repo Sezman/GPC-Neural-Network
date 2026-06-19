@@ -21,7 +21,9 @@ Run it with:
 """
 
 import os
+import csv
 import json
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,6 +53,11 @@ MODEL_DIR = "model"
 MODEL_PATH = os.path.join(MODEL_DIR, "priority_model.pt")
 LABEL_MAP_PATH = os.path.join(MODEL_DIR, "label_map.json")
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+
+# Where user corrections are appended. Stays local, next to this file, so no
+# email text ever leaves the machine. Created on first correction if missing.
+FEEDBACK_PATH = "feedback.csv"
+FEEDBACK_HEADER = ["timestamp", "text", "predictedLabel", "correctedLabel", "confidence"]
 
 
 app = FastAPI(title="Gmail Priority Classifier")
@@ -241,6 +248,20 @@ class ScoreRequest(BaseModel):
     text: str
 
 
+class FeedbackRequest(BaseModel):
+    """Body of POST /feedback.
+
+    Sent when the user corrects a badge in Gmail. We record the original
+    prediction alongside the corrected label so the data can later be used to
+    retrain the model.
+    """
+
+    text: str
+    predictedLabel: str
+    correctedLabel: str
+    confidence: float
+
+
 @app.get("/health")
 def health():
     """Simple liveness check."""
@@ -273,3 +294,30 @@ def score(request: ScoreRequest):
             print("[backend] neural scoring failed, falling back:", error)
 
     return rule_based_score(request.text)
+
+
+@app.post("/feedback")
+def feedback(request: FeedbackRequest):
+    """Record a user's label correction to feedback.csv (local only).
+
+    Creates feedback.csv with a header row the first time it's called, then
+    appends one row per correction:
+        timestamp,text,predictedLabel,correctedLabel,confidence
+    """
+    file_exists = os.path.exists(FEEDBACK_PATH)
+
+    # newline="" is the documented way to let the csv module manage line
+    # endings so rows aren't double-spaced on Windows.
+    with open(FEEDBACK_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(FEEDBACK_HEADER)
+        writer.writerow([
+            datetime.now().isoformat(timespec="seconds"),
+            request.text,
+            request.predictedLabel,
+            request.correctedLabel,
+            request.confidence,
+        ])
+
+    return {"status": "ok", "recorded": True}
