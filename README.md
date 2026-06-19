@@ -15,18 +15,9 @@ versioned evaluation reports.
 
 ## Demo
 
-> Screenshots live in [`screenshots/`](screenshots/). Replace the placeholders
-> below with your own captures.
-
 | Priority badges in the inbox | Control panel |
 | --- | --- |
 | ![Gmail priority badges](screenshots/gmail-badges.png) | ![Control panel toggles](screenshots/control-panel.png) |
-
-| Correction menu | Backend model status |
-| --- | --- |
-| ![Badge correction menu](screenshots/correction-menu.png) | ![Model status endpoint](screenshots/model-status.png) |
-
-![Confusion matrix report](screenshots/confusion-matrix.png)
 
 ---
 
@@ -267,12 +258,6 @@ This project is **local-first by design**:
 
 ---
 
-## Resume bullet
-
-> Built a privacy-conscious Gmail prioritization Chrome extension with a FastAPI
-> inference backend, PyTorch neural network classifier, local feedback
-> collection, retraining pipeline, and dynamic inbox UI controls.
-
 ---
 
 ## Project structure
@@ -296,5 +281,3 @@ Gmail's unstable DOM, are in
 [`gmail-priority-extension/README.md`](gmail-priority-extension/README.md).
 
 ---
-
-*This is a personal learning project, not an official Google product.*
