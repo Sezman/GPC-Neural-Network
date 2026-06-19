@@ -23,6 +23,14 @@
   vertical-align: middle;
   /* Keep the badge from being squished or wrapping awkwardly in the row. */
   white-space: nowrap;
+  /* The badge is clickable: it opens the correction menu. */
+  cursor: pointer;
+  user-select: none;
+}
+
+.gpc-badge:hover {
+  /* Hint that the badge is interactive without changing its color meaning. */
+  outline: 1px solid rgba(0, 0, 0, 0.35);
 }
 
 /* HIGH: strong, attention-grabbing. */
@@ -41,6 +49,76 @@
 .gpc-low {
   background-color: #e8eaed; /* light gray */
   color: #5f6368;
+}
+
+/*
+ * ----------------------------------------------------------------------------
+ * Correction menu (opened by clicking a badge)
+ * ----------------------------------------------------------------------------
+ * A small floating list of the three labels. Positioned with inline top/left
+ * by content.js, just below the clicked badge.
+ */
+.gpc-menu {
+  position: fixed;
+  z-index: 10000; /* above the panel and Gmail's UI */
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+  padding: 4px;
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+/* Each label choice. */
+.gpc-menu-item {
+  display: block;
+  width: 100%;
+  margin: 1px 0;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #202124;
+  cursor: pointer;
+}
+
+.gpc-menu-item:hover {
+  background-color: #f1f3f4;
+}
+
+/* A small colored dot before each choice, matching the badge colors. */
+.gpc-menu-item::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.gpc-menu-high::before {
+  background-color: #d93025;
+}
+
+.gpc-menu-medium::before {
+  background-color: #f9ab00;
+}
+
+.gpc-menu-low::before {
+  background-color: #9aa0a6;
+}
+
+/* The label currently applied to the row is marked with a check. */
+.gpc-menu-current::after {
+  content: " \2713";
+  color: #1a73e8;
 }
 
 /*

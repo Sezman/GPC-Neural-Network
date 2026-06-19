@@ -17,6 +17,12 @@ backend/model/
 backend/*_private*.csv
 backend/real_*.csv
 
+# ---- User label corrections (contains real email text; keep local) ----
+backend/feedback.csv
+
+# ---- Generated evaluation reports (keep local) ----
+backend/reports/
+
 # ---- Editors / OS ----
 .vscode/
 .idea/

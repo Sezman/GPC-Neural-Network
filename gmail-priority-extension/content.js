@@ -422,6 +422,10 @@ function applyBadge(row, text, result) {
   if (existing) {
     existing.textContent = label;
     existing.dataset.label = label;
+    // Remember the model's own prediction + confidence for /feedback. These
+    // are the "before" values reported if the user later corrects the label.
+    existing.dataset.predicted = label;
+    existing.dataset.confidence = String(score);
     existing.className = "gpc-badge gpc-" + label.toLowerCase();
     return;
   }
@@ -430,8 +434,141 @@ function applyBadge(row, text, result) {
   const badge = document.createElement("span");
   badge.textContent = label;
   badge.dataset.label = label; // used for the duplicate/rescore checks above
+  // The model's prediction + its confidence, sent verbatim as predictedLabel
+  // and confidence when the user corrects this badge.
+  badge.dataset.predicted = label;
+  badge.dataset.confidence = String(score);
   badge.className = "gpc-badge gpc-" + label.toLowerCase();
+  // Clicking the badge opens a small menu to correct the label.
+  badge.addEventListener("click", (event) => onBadgeClick(event, row, badge));
   row.insertBefore(badge, row.firstChild);
+}
+
+/*
+ * 5c) Feedback / correction flow.
+ *
+ * Clicking a badge opens a tiny menu with High / Medium / Low. Picking one:
+ *   1. POSTs the correction to the backend's /feedback endpoint, which logs it
+ *      to feedback.csv for later retraining. (Stays entirely local.)
+ *   2. Immediately repaints the badge with the corrected label.
+ *   3. Re-tags the row (data-gpc-label) so "Hide Low" reacts instantly: a row
+ *      corrected to Low while Hide Low is ON disappears; one corrected away
+ *      from Low reappears. The CSS rule does the actual show/hide.
+ */
+const FEEDBACK_URL = "http://127.0.0.1:8000/feedback";
+const CORRECTION_LABELS = ["High", "Medium", "Low"];
+
+// Only one correction menu is open at a time; track it so we can close it.
+let openMenu = null;
+
+function closeMenu() {
+  if (openMenu) {
+    openMenu.remove();
+    openMenu = null;
+    document.removeEventListener("click", closeMenu, true);
+  }
+}
+
+/*
+ * Open the correction menu next to the clicked badge. We stop propagation so
+ * the click that opens the menu doesn't immediately trigger the outside-click
+ * handler that closes it, and so Gmail doesn't open the email.
+ */
+function onBadgeClick(event, row, badge) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  // A second click on the same badge toggles the menu shut.
+  const wasOpen = openMenu !== null;
+  closeMenu();
+  if (wasOpen) {
+    return;
+  }
+
+  const menu = document.createElement("div");
+  menu.className = "gpc-menu";
+
+  for (const choice of CORRECTION_LABELS) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "gpc-menu-item gpc-menu-" + choice.toLowerCase();
+    item.textContent = choice;
+    // Mark the current label so the user can see what it's set to.
+    if (choice === badge.dataset.label) {
+      item.classList.add("gpc-menu-current");
+    }
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeMenu();
+      correctLabel(row, badge, choice);
+    });
+    menu.appendChild(item);
+  }
+
+  // Position the menu just below the badge using fixed coordinates.
+  const rect = badge.getBoundingClientRect();
+  menu.style.top = rect.bottom + 4 + "px";
+  menu.style.left = rect.left + "px";
+
+  document.body.appendChild(menu);
+  openMenu = menu;
+
+  // Close when clicking anywhere else. Capture phase so it fires before other
+  // handlers; the opening click already stopped propagating so it won't self-close.
+  document.addEventListener("click", closeMenu, true);
+}
+
+/*
+ * Apply a user correction: send it to the backend, then update the UI. The
+ * predicted label + confidence come from the badge's dataset (the model's
+ * original output). The visual update happens regardless of whether the POST
+ * succeeds, so the user always sees their correction take effect.
+ */
+function correctLabel(row, badge, newLabel) {
+  const text = row.dataset.gpcText || getRowText(row);
+  const predictedLabel = badge.dataset.predicted || badge.dataset.label;
+  const confidence = Number(badge.dataset.confidence) || 0;
+
+  // No change? Nothing to record.
+  if (newLabel === badge.dataset.label) {
+    return;
+  }
+
+  // 1) Send the correction to the local backend (fire and continue).
+  fetch(FEEDBACK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: text,
+      predictedLabel: predictedLabel,
+      correctedLabel: newLabel,
+      confidence: confidence,
+    }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Backend responded with HTTP " + response.status);
+      }
+      console.log("[GPC] feedback recorded:", predictedLabel, "->", newLabel);
+    })
+    .catch((error) => {
+      console.warn("[GPC] feedback could not be saved (backend offline?).", error);
+    });
+
+  // 2) Update the badge + row immediately. Re-tagging data-gpc-label lets the
+  // Hide Low CSS rule hide/unhide this row on the spot.
+  badge.textContent = newLabel;
+  badge.dataset.label = newLabel;
+  badge.className = "gpc-badge gpc-" + newLabel.toLowerCase();
+  row.dataset.gpcLabel = newLabel;
+
+  // 3) Keep the cache in sync so a later re-score of identical text doesn't
+  // overwrite the user's correction.
+  const cached = scoreCache.get(text);
+  if (cached) {
+    cached.label = newLabel;
+  }
 }
 
 /*

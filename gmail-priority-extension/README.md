@@ -74,6 +74,27 @@ with two modern pill-style switches:
 Both toggle states are saved in `localStorage`, so they persist after you
 refresh Gmail.
 
+### Correcting a label (feedback)
+
+Every badge is clickable. Click one and a small menu opens offering **High**,
+**Medium**, and **Low** (the current label is check-marked). Pick the correct
+one and:
+
+- The badge updates **immediately**.
+- The correction is `POST`ed to the backend's **`/feedback`** endpoint, which
+  appends it to `backend/feedback.csv` for later retraining.
+- **Hide Low** reacts on the spot: correct a row to **Low** while Hide Low is ON
+  and it disappears; correct a hidden Low row to **High/Medium** and it returns.
+
+The correction includes the model's original prediction and confidence, so
+`feedback.csv` captures exactly where the model was wrong. If the backend is
+offline the badge still updates — only the CSV write is skipped (with a console
+warning). No correction data ever leaves your machine.
+
+To turn those corrections into a better model, run
+`py retrain_with_feedback.py` in `backend/` and restart the server. See
+**Retraining from feedback** in the [top-level README](../README.md).
+
 ---
 
 ## Project structure
@@ -82,18 +103,24 @@ refresh Gmail.
 EmailClassifier/
   gmail-priority-extension/
     manifest.json   # Manifest V3 config (host permission for the backend + content script)
-    content.js      # Detect rows, call the backend to score them, add badges
-    styles.css      # Badge styling + pill toggle panel
+    content.js      # Detect rows, score them, add badges, handle corrections
+    styles.css      # Badge styling + correction menu + pill toggle panel
     README.md       # This file
 
   backend/
-    main.py                  # FastAPI app: /score, /health, /model-status
+    main.py                  # FastAPI app: /score, /feedback, /health, /model-status
     requirements.txt
-    train_nn.py              # Trains the neural network from the CSV
+    train_nn.py              # Trains the neural network from the starter CSV
+    retrain_with_feedback.py # Retrains on the starter CSV + feedback.csv
     email_training_data.csv  # Starter labeled examples (text,label)
+    feedback.csv             # User label corrections (created on first feedback)
     model/
-      priority_model.pt      # Saved PyTorch model (created by train_nn.py)
-      label_map.json         # Index -> label mapping (created by train_nn.py)
+      priority_model.pt      # Saved PyTorch model (created by the trainers)
+      label_map.json         # Index -> label mapping (created by the trainers)
+    reports/                 # Evaluation reports written by retrain_with_feedback.py
+      evaluation_report.txt  # Human-readable metrics summary
+      evaluation_report.json # Same metrics, machine-readable
+      confusion_matrix.png   # Confusion matrix image (only if matplotlib installed)
 ```
 
 ---
@@ -173,6 +200,21 @@ and returns (neural-network mode):
 
 In rule-based mode, `score` is an integer point total, the `matched*` arrays
 list the keywords that fired, and `source` is `"rule-based"`.
+
+`POST /feedback` records a user's label correction. It accepts:
+
+```json
+{
+  "text": "email row text",
+  "predictedLabel": "Low",
+  "correctedLabel": "High",
+  "confidence": 0.82
+}
+```
+
+and appends a row to `backend/feedback.csv` (created with a header the first
+time), returning `{ "status": "ok", "recorded": true }`. The CSV columns are
+`timestamp,text,predictedLabel,correctedLabel,confidence`.
 
 `GET /health` returns `{ "status": "ok" }`.
 
@@ -278,6 +320,10 @@ likely thing to need maintenance.
   network, with rule-based keyword scoring kept as a fallback.
 - ✅ **Local & private** — everything runs on `127.0.0.1`; no email text leaves
   your machine.
+- ✅ **Feedback / corrections** — click a badge to correct its label; the fix is
+  applied instantly and logged to `backend/feedback.csv` for retraining.
+- ✅ **Retrain from feedback** — `retrain_with_feedback.py` folds `feedback.csv`
+  corrections into the starter data and retrains, closing the learning loop.
 
 ## Future improvement ideas
 
@@ -288,5 +334,3 @@ likely thing to need maintenance.
   instead of visual-only badges.
 - **In-browser inference** — run the model on-device (e.g. ONNX Runtime Web) so
   the backend isn't needed at all.
-- **Online learning** — let users correct a badge and feed that back as new
-  training data.
